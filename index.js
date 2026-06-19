@@ -3,7 +3,7 @@ const app = express();
 
 require("dotenv").config();
 var cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 app.use(cors());
 app.use(express.json());
 
@@ -32,13 +32,60 @@ async function run() {
       const result = await StartupsCollections.find()
         .sort({ createdAt: -1 })
         .toArray();
-        res.json(result)
+      res.json(result);
     });
+
+
+   /**
+    * ! get opportunities by sort , search and pangination 
+    */ 
     app.get("/opportunities", async (req, res) => {
-      const result = await OpportunitiesCollections.find()
+      const search = req.query.search || "";
+      const workType = req.query.workType || "";
+      const ecosystemSegment = req.query.ecosystemSegment || "";
+      const page = parseInt(req.query.page) || 1;
+      const perPage = 6;
+
+      const query = {};
+
+      if (search) {
+        // const regex = new RegExp(search, "i");
+        query.$or = [
+          {
+            roleTitle: { $regex: search, $options: "i" },
+          },
+          { requiredSkills: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      if (workType) {
+        query.workType = workType;
+      }
+      if (ecosystemSegment) {
+        query.ecosystemSegment = ecosystemSegment;
+      }
+
+      const totalItems = await OpportunitiesCollections.countDocuments(query);
+      const totalPages = Math.ceil(totalItems / perPage);
+
+      const result = await OpportunitiesCollections.find(query)
+
+        .skip((page - 1) * perPage)
+        .limit(perPage)
         .sort({ createdAt: -1 })
         .toArray();
-        res.json(result)
+
+      res.json({ data: result, totalPages, currentPage: page, totalItems });
+    });
+
+
+
+    app.get("/opportunities/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await OpportunitiesCollections.findOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
     });
 
     await client.db("admin").command({ ping: 1 });
