@@ -27,7 +27,14 @@ async function run() {
     const database = client.db("Startup-Team-Builder-Platform");
     const StartupsCollections = database.collection("Startups");
     const OpportunitiesCollections = database.collection("Opportunities");
+    const ApplicationsCollections = database.collection(
+      "applications-Collection",
+    );
+    const PlanCollections = database.collection("plan");
 
+    /**
+     * get startups all data
+     */
     app.get("/startups", async (req, res) => {
       const result = await StartupsCollections.find()
         .sort({ createdAt: -1 })
@@ -35,10 +42,9 @@ async function run() {
       res.json(result);
     });
 
-
-   /**
-    * ! get opportunities by sort , search and pangination 
-    */ 
+    /**
+     * ! get opportunities by sort , search and pangination
+     */
     app.get("/opportunities", async (req, res) => {
       const search = req.query.search || "";
       const workType = req.query.workType || "";
@@ -78,13 +84,36 @@ async function run() {
       res.json({ data: result, totalPages, currentPage: page, totalItems });
     });
 
+    /**
+     * ! get all Opportunities
+     */
+    app.get("/Opportunities-all-data", async (req, res) => {
+      const result = await OpportunitiesCollections.find().toArray();
+      res.json(result);
+    });
 
-
+    /**
+     * ! get Opportunities details
+     */
     app.get("/opportunities/:id", async (req, res) => {
       const { id } = req.params;
       const result = await OpportunitiesCollections.findOne({
         _id: new ObjectId(id),
       });
+      res.json(result);
+    });
+
+    app.get("/plan", async (req, res) => {
+      const result = await PlanCollections.find().toArray();
+      res.json(result);
+    });
+
+    /**
+     * application post data
+     */
+    app.post("/application", async (req, res) => {
+      const query = req.body;
+      const result = await ApplicationsCollections.insertOne(query);
       res.json(result);
     });
 
