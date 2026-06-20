@@ -33,7 +33,7 @@ async function run() {
     const PlanCollections = database.collection("plan");
 
     /**
-     * get startups all data
+     *! get startups all data
      */
     app.get("/startups", async (req, res) => {
       const result = await StartupsCollections.find()
@@ -109,11 +109,35 @@ async function run() {
     });
 
     /**
-     * application post data
+     *  ! application post data
      */
     app.post("/application", async (req, res) => {
       const query = req.body;
       const result = await ApplicationsCollections.insertOne(query);
+      res.json(result);
+    });
+
+    /**
+     * ! get Collaborator`s applications data
+     */
+    app.get("/application", async (req, res) => {
+      const query = {};
+
+      if (req.query.userId) {
+        query.userid = req.query.userId;
+      }
+      console.log(query.userid, req.query.userId);
+      const result = await ApplicationsCollections.find(query).toArray();
+      console.log("result", result);
+      res.json(result);
+    });
+
+    /**
+     *  ! founder post data opportunities
+     */
+    app.post("/opportunities", async (req, res) => {
+      const query = req.body;
+      const result = await OpportunitiesCollections.insertOne(query);
       res.json(result);
     });
 
