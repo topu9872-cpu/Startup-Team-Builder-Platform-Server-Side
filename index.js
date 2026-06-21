@@ -43,6 +43,55 @@ async function run() {
         .toArray();
       res.json(result);
     });
+    /**
+     * ! get specfec founder data
+     */
+    app.get("/startups/:userId", async (req, res) => {
+      const { userId } = req.params;
+      const result = await StartupsCollections.find({ user: userId }).toArray();
+      res.json(result);
+    });
+
+    /**
+     * ! post startups
+     */
+    app.post("/startups", async (req, res) => {
+      const updateData = req.body;
+      console.log(updateData);
+      const result = await StartupsCollections.insertOne(updateData);
+      console.log(result);
+      res.json(result);
+    });
+
+    /**
+     * ! post startups
+     */
+
+    app.patch("/startups/:id", async (req, res) => {
+      const { id } = req.params;
+      const body = req.body;
+      console.log(body, id);
+      const result = await StartupsCollections.updateOne(
+        {
+          _id: new ObjectId(id),
+        },
+        {
+          $set: body,
+        },
+      );
+      res.json(result);
+    });
+
+    /**
+     * ! delete startups
+     */
+
+    app.delete("/startups/:id", async (req, res) => {
+      const result = await StartupsCollections.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
+    });
 
     /**
      * ! get opportunities by sort , search and pangination
@@ -166,7 +215,7 @@ async function run() {
         createdAt: new Date(),
       };
       const result = await SubcriptionsCollections.insertOne(data);
-    console.log("INSERT RESULT:", result);
+
       const filter = { _id: new ObjectId(query.userId) };
       const update = {
         $set: {
