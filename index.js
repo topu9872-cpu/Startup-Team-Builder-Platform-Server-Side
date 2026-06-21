@@ -31,6 +31,8 @@ async function run() {
       "applications-Collection",
     );
     const PlanCollections = database.collection("plan");
+    const SubcriptionsCollections = database.collection("subcriptions");
+    const UsersCollections = database.collection("user");
 
     /**
      *! get startups all data
@@ -126,9 +128,9 @@ async function run() {
       if (req.query.userId) {
         query.userid = req.query.userId;
       }
-      console.log(query.userid, req.query.userId);
+
       const result = await ApplicationsCollections.find(query).toArray();
-      console.log("result", result);
+
       res.json(result);
     });
 
@@ -139,6 +141,40 @@ async function run() {
       const query = req.body;
       const result = await OpportunitiesCollections.insertOne(query);
       res.json(result);
+    });
+
+    /**
+     * ! get founder Opportunities data
+     */
+    app.get("/founder-opportunities", async (req, res) => {
+      const query = {};
+      if (req.query.userId) {
+        query.userId = req.query.userId;
+      }
+      const result = await OpportunitiesCollections.find(query).toArray();
+      res.json(result);
+    });
+
+    /**
+     * ! founder subcriptions post data
+     */
+
+    app.post("/subcriptions", async (req, res) => {
+      const query = req.body;
+      const data = {
+        ...query,
+        createdAt: new Date(),
+      };
+      const result = await SubcriptionsCollections.insertOne(data);
+    console.log("INSERT RESULT:", result);
+      const filter = { _id: new ObjectId(query.userId) };
+      const update = {
+        $set: {
+          plan: query.plan,
+        },
+      };
+      const updateUser = await UsersCollections.updateOne(filter, update);
+      res.json({ success: true, updateUser, result });
     });
 
     await client.db("admin").command({ ping: 1 });
