@@ -64,7 +64,7 @@ async function run() {
     });
 
     /**
-     * ! post startups
+     * ! update startups
      */
 
     app.patch("/startups/:id", async (req, res) => {
@@ -95,25 +95,31 @@ async function run() {
       res.json(result);
     });
 
+
+
     /**
      * ! get opportunities by sort , search and pangination
      */
-    app.get("/opportunities", async (req, res) => {
-      const search = req.query.search || "";
-      const workType = req.query.workType || "";
-      const ecosystemSegment = req.query.ecosystemSegment || "";
+    app.get("/all-opportunities", async (req, res) => {
+      const query = {};
+      // const search = req.query.userId || "";
+      // const workType = req.query.workType || "";
+      // const ecosystemSegment = req.query.ecosystemSegment || "";
       const page = parseInt(req.query.page) || 1;
       const perPage = 6;
-
-      const query = {};
-
+      console.log(
+        "tttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+        req.query.userId,
+        req.query.workType,
+        req.query.ecosystemSegment,
+      );
       if (search) {
-        // const regex = new RegExp(search, "i");
+        const regex = new RegExp(search, "i");
         query.$or = [
           {
-            roleTitle: { $regex: search, $options: "i" },
+            roleTitle: regex,
           },
-          { requiredSkills: { $regex: search, $options: "i" } },
+          { requiredSkills: regex },
         ];
       }
 
@@ -164,7 +170,7 @@ async function run() {
       if (req.query.userId) {
         query.userId = req.query.userId;
       }
-      console.log(query);
+
       const result = await OpportunitiesCollections.find(query).toArray();
       res.json(result);
     });
@@ -277,8 +283,10 @@ async function run() {
       const query = req.body;
       const data = {
         ...query,
-        createdAt: new Date(),
+        createdAt: new Date().toDateString("en-GB"),
       };
+      console.log(data);
+      console.log(query);
       const result = await SubcriptionsCollections.insertOne(data);
 
       const filter = { _id: new ObjectId(query.userId) };
@@ -289,6 +297,14 @@ async function run() {
       };
       const updateUser = await UsersCollections.updateOne(filter, update);
       res.json({ success: true, updateUser, result });
+    });
+
+    /**
+     * ! get subcriptions data
+     */
+    app.get("/subcriptions", async (req, res) => {
+      const result = await SubcriptionsCollections.find().toArray();
+      res.json(result);
     });
 
     await client.db("admin").command({ ping: 1 });
