@@ -95,53 +95,52 @@ async function run() {
       res.json(result);
     });
 
-
-
     /**
      * ! get opportunities by sort , search and pangination
      */
-    app.get("/all-opportunities", async (req, res) => {
-      const query = {};
-      // const search = req.query.userId || "";
-      // const workType = req.query.workType || "";
-      // const ecosystemSegment = req.query.ecosystemSegment || "";
-      const page = parseInt(req.query.page) || 1;
-      const perPage = 6;
-      console.log(
-        "tttttttttttttttttttttttttttttttttttttttttttttttttttttt",
-        req.query.userId,
-        req.query.workType,
-        req.query.ecosystemSegment,
-      );
-      if (search) {
-        const regex = new RegExp(search, "i");
-        query.$or = [
-          {
-            roleTitle: regex,
-          },
-          { requiredSkills: regex },
-        ];
-      }
+   app.get("/all-opportunities", async (req, res) => {
+  try {
+    const query = {};
 
-      if (workType) {
-        query.workType = workType;
-      }
-      if (ecosystemSegment) {
-        query.ecosystemSegment = ecosystemSegment;
-      }
+    const search = req.query.search || "";
+    const workType = req.query.workType || "";
+    const ecosystemSegment = req.query.ecosystemSegment || "";
+    const page = parseInt(req.query.page) || 1;
 
-      const totalItems = await OpportunitiesCollections.countDocuments(query);
-      const totalPages = Math.ceil(totalItems / perPage);
+    const perPage = 6;
 
-      const result = await OpportunitiesCollections.find(query)
+    if (search.trim()) {
+      const regex = new RegExp(search, "i");
 
-        .skip((page - 1) * perPage)
-        .limit(perPage)
-        .sort({ createdAt: -1 })
-        .toArray();
+      query.$or = [
+        { roleTitle: regex },
+        { requiredSkills: regex },
+      ];
+    }
 
-      res.json({ data: result, totalPages, currentPage: page, totalItems });
+    if (workType) query.workType = workType;
+    if (ecosystemSegment) query.ecosystemSegment = ecosystemSegment;
+
+    const totalItems = await OpportunitiesCollections.countDocuments(query);
+
+    const result = await OpportunitiesCollections
+      .find(query)
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .sort({ createdAt: -1 })
+      .toArray();
+console.log(query)
+    res.json({
+      data: result,
+      totalPages: Math.ceil(totalItems / perPage),
+      currentPage: page,
+      totalItems,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
     /**
      * ! get all Opportunities
@@ -285,8 +284,7 @@ async function run() {
         ...query,
         createdAt: new Date().toDateString("en-GB"),
       };
-      console.log(data);
-      console.log(query);
+
       const result = await SubcriptionsCollections.insertOne(data);
 
       const filter = { _id: new ObjectId(query.userId) };
@@ -297,6 +295,29 @@ async function run() {
       };
       const updateUser = await UsersCollections.updateOne(filter, update);
       res.json({ success: true, updateUser, result });
+    });
+
+    /**
+     * ! get all users
+     */
+
+    app.get("/users", async (req, res) => {
+      const result = await UsersCollections.find().toArray();
+      res.json(result);
+    });
+
+    /**
+     * ! update users isBlock.........................................................................................
+     */
+
+    app.patch("/users/:id", async (req, res) => {
+      const { id } = req.params;
+      const body = req.isBlock;
+      const result = await UsersCollections.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { body } },
+      );
+      res.json(result);
     });
 
     /**
