@@ -44,8 +44,8 @@ async function run() {
       res.json(result);
     });
     /**
-     * ! get specfec founder data
-     */
+    //  * ! get specfec founder data
+    //  */
     app.get("/startups/:userId", async (req, res) => {
       const { userId } = req.params;
       const result = await StartupsCollections.find({ user: userId }).toArray();
@@ -57,9 +57,9 @@ async function run() {
      */
     app.post("/startups", async (req, res) => {
       const updateData = req.body;
-      console.log(updateData);
+
       const result = await StartupsCollections.insertOne(updateData);
-      console.log(result);
+
       res.json(result);
     });
 
@@ -70,7 +70,7 @@ async function run() {
     app.patch("/startups/:id", async (req, res) => {
       const { id } = req.params;
       const body = req.body;
-      console.log(body, id);
+
       const result = await StartupsCollections.updateOne(
         {
           _id: new ObjectId(id),
@@ -87,9 +87,11 @@ async function run() {
      */
 
     app.delete("/startups/:id", async (req, res) => {
+      const { id } = req.params;
       const result = await StartupsCollections.deleteOne({
         _id: new ObjectId(id),
       });
+
       res.json(result);
     });
 
@@ -148,9 +150,22 @@ async function run() {
      */
     app.get("/opportunities/:id", async (req, res) => {
       const { id } = req.params;
+
       const result = await OpportunitiesCollections.findOne({
         _id: new ObjectId(id),
       });
+      res.json(result);
+    });
+    /**
+     * ! get funder all Opportunities data
+     */
+    app.get("/founder-opportunities", async (req, res) => {
+      const query = {};
+      if (req.query.userId) {
+        query.userId = req.query.userId;
+      }
+      console.log(query);
+      const result = await OpportunitiesCollections.find(query).toArray();
       res.json(result);
     });
 
@@ -182,6 +197,18 @@ async function run() {
 
       res.json(result);
     });
+    /**
+     * !  Collaborator`s applications status update data
+     */
+    app.patch("/application/:id", async (req, res) => {
+      const { id } = req.params;
+      const { status } = req.body;
+      const result = await ApplicationsCollections.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status } },
+      );
+      res.json(result);
+    });
 
     /**
      *  ! founder post data opportunities
@@ -201,6 +228,44 @@ async function run() {
         query.userId = req.query.userId;
       }
       const result = await OpportunitiesCollections.find(query).toArray();
+      res.json(result);
+    });
+
+    /**
+     * ! delete founder Opportunities data
+     */
+    app.delete("/founder-opportunities/:id", async (req, res) => {
+      const { id } = req.params;
+
+      const result = await OpportunitiesCollections.deleteOne({
+        _id: new ObjectId(id),
+      });
+
+      res.json(result);
+    });
+
+    app.patch("/founder-opportunities/:id", async (req, res) => {
+      const { id } = req.params;
+      const body = req.body;
+
+      const result = await OpportunitiesCollections.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: body },
+      );
+
+      res.json(result);
+    });
+
+    /**
+     * ! get Companies applications data
+     */
+    app.get("/companies-application", async (req, res) => {
+      const query = {};
+      if (req.query.userId) {
+        query.founderId = req.query.userId;
+      }
+
+      const result = await ApplicationsCollections.find(query).toArray();
       res.json(result);
     });
 
