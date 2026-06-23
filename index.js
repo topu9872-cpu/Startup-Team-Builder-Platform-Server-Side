@@ -49,7 +49,7 @@ async function run() {
       }
 
       const session = await UserSessionCollections.findOne({ token });
-  
+
       if (!session) {
         return res.status(401).json({ message: "Invalid session" });
       }
@@ -57,11 +57,41 @@ async function run() {
       const user = await UsersCollections.findOne({
         _id: new ObjectId(UserId),
       });
+
       if (!user) {
         return res.status(401).json({ message: "Invalid UserId" });
       }
       req.user = user;
-      console.log(user);
+
+      next();
+    };
+
+    const AdminVerify = async (req, res, next) => {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({
+          message: "forbidden access",
+        });
+      }
+      next();
+    };
+    const FounderVerify = async (req, res, next) => {
+      if (req.user.role !== "founder") {
+        return res.status(403).json({
+          message: "forbidden access",
+        });
+      }
+      next();
+    };
+    const CollaboratorVerify = async (req, res, next) => {
+      console.log(
+        "userrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        req.user.role,
+      );
+      if (req.user.role !== "collaborator") {
+        return res.status(403).json({
+          message: "forbidden access",
+        });
+      }
       next();
     };
 
@@ -79,16 +109,23 @@ async function run() {
      * ! get specfec founder data
      */
 
-    app.get("/startups/:userId", VerifyToken, async (req, res) => {
-      const { userId } = req.params;
-      const result = await StartupsCollections.find({ user: userId }).toArray();
-      res.json(result);
-    });
+    app.get(
+      "/startups/:userId",
+      VerifyToken,
+      FounderVerify,
+      async (req, res) => {
+        const { userId } = req.params;
+        const result = await StartupsCollections.find({
+          user: userId,
+        }).toArray();
+        res.json(result);
+      },
+    );
 
     /**
      * ! post startups
      */
-    app.post("/startups", async (req, res) => {
+    app.post("/startups", VerifyToken, FounderVerify, async (req, res) => {
       const updateData = req.body;
 
       const result = await StartupsCollections.insertOne(updateData);
@@ -100,7 +137,7 @@ async function run() {
      * ! update startups
      */
 
-    app.patch("/startups/:id", VerifyToken, async (req, res) => {
+    app.patch("/startups/:id", VerifyToken, FounderVerify, async (req, res) => {
       const { id } = req.params;
       const body = req.body;
 
@@ -119,14 +156,19 @@ async function run() {
      * ! delete startups
      */
 
-    app.delete("/startups/:id", VerifyToken, async (req, res) => {
-      const { id } = req.params;
-      const result = await StartupsCollections.deleteOne({
-        _id: new ObjectId(id),
-      });
+    app.delete(
+      "/startups/:id",
+      VerifyToken,
+      FounderVerify,
+      async (req, res) => {
+        const { id } = req.params;
+        const result = await StartupsCollections.deleteOne({
+          _id: new ObjectId(id),
+        });
 
-      res.json(result);
-    });
+        res.json(result);
+      },
+    );
 
     /**
      * ! get opportunities by sort , search and pangination
@@ -193,15 +235,20 @@ async function run() {
     /**
      * ! get funder all Opportunities data
      */
-    app.get("/founder-opportunities", VerifyToken, async (req, res) => {
-      const query = {};
-      if (req.query.userId) {
-        query.userId = req.query.userId;
-      }
+    app.get(
+      "/founder-opportunities",
+      VerifyToken,
+      FounderVerify,
+      async (req, res) => {
+        const query = {};
+        if (req.query.userId) {
+          query.userId = req.query.userId;
+        }
 
-      const result = await OpportunitiesCollections.find(query).toArray();
-      res.json(result);
-    });
+        const result = await OpportunitiesCollections.find(query).toArray();
+        res.json(result);
+      },
+    );
 
     app.get("/plan", async (req, res) => {
       const result = await PlanCollections.find().toArray();
@@ -234,15 +281,20 @@ async function run() {
     /**
      * !  Collaborator`s applications status update data
      */
-    app.patch("/application/:id", VerifyToken, async (req, res) => {
-      const { id } = req.params;
-      const { status } = req.body;
-      const result = await ApplicationsCollections.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { status } },
-      );
-      res.json(result);
-    });
+    app.patch(
+      "/application/:id",
+      VerifyToken,
+      FounderVerify,
+      async (req, res) => {
+        const { id } = req.params;
+        const { status } = req.body;
+        const result = await ApplicationsCollections.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status } },
+        );
+        res.json(result);
+      },
+    );
 
     /**
      *  ! founder post data opportunities
@@ -256,39 +308,54 @@ async function run() {
     /**
      * ! get founder Opportunities data
      */
-    app.get("/founder-opportunities", VerifyToken, async (req, res) => {
-      const query = {};
-      if (req.query.userId) {
-        query.userId = req.query.userId;
-      }
-      const result = await OpportunitiesCollections.find(query).toArray();
-      res.json(result);
-    });
+    app.get(
+      "/founder-opportunities",
+      VerifyToken,
+      FounderVerify,
+      async (req, res) => {
+        const query = {};
+        if (req.query.userId) {
+          query.userId = req.query.userId;
+        }
+        const result = await OpportunitiesCollections.find(query).toArray();
+        res.json(result);
+      },
+    );
 
     /**
      * ! delete founder Opportunities data
      */
-    app.delete("/founder-opportunities/:id", VerifyToken, async (req, res) => {
-      const { id } = req.params;
+    app.delete(
+      "/founder-opportunities/:id",
+      VerifyToken,
+      FounderVerify,
+      async (req, res) => {
+        const { id } = req.params;
 
-      const result = await OpportunitiesCollections.deleteOne({
-        _id: new ObjectId(id),
-      });
+        const result = await OpportunitiesCollections.deleteOne({
+          _id: new ObjectId(id),
+        });
 
-      res.json(result);
-    });
+        res.json(result);
+      },
+    );
 
-    app.patch("/founder-opportunities/:id", VerifyToken, async (req, res) => {
-      const { id } = req.params;
-      const body = req.body;
+    app.patch(
+      "/founder-opportunities/:id",
+      VerifyToken,
+      FounderVerify,
+      async (req, res) => {
+        const { id } = req.params;
+        const body = req.body;
 
-      const result = await OpportunitiesCollections.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: body },
-      );
+        const result = await OpportunitiesCollections.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: body },
+        );
 
-      res.json(result);
-    });
+        res.json(result);
+      },
+    );
 
     /**
      * ! get Companies applications data
@@ -330,7 +397,7 @@ async function run() {
      * ! get all users
      */
 
-    app.get("/users", VerifyToken, async (req, res) => {
+    app.get("/users", VerifyToken, AdminVerify, async (req, res) => {
       const result = await UsersCollections.find().toArray();
       res.json(result);
     });
@@ -339,20 +406,27 @@ async function run() {
      * ! update users isBlock...
      */
 
-    app.patch("/users/:id", VerifyToken, async (req, res) => {
-      const { id } = req.params;
-      const body = req.isBlock;
-      const result = await UsersCollections.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { body } },
-      );
-      res.json(result);
-    });
+    app.patch(
+      "/update/users/:id",
+      VerifyToken,
+      AdminVerify,
+      async (req, res) => {
+        const { id } = req.params;
+        const { isBlock } = req.body;
+
+        const result = await UsersCollections.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { isBlock } },
+        );
+        console.log(result);
+        res.json(result);
+      },
+    );
 
     /**
      * ! get subcriptions data
      */
-    app.get("/subcriptions", VerifyToken, async (req, res) => {
+    app.get("/subcriptions", VerifyToken, AdminVerify, async (req, res) => {
       const result = await SubcriptionsCollections.find().toArray();
       res.json(result);
     });
