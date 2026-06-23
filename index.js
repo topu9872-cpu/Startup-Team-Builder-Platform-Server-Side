@@ -33,6 +33,37 @@ async function run() {
     const PlanCollections = database.collection("plan");
     const SubcriptionsCollections = database.collection("subcriptions");
     const UsersCollections = database.collection("user");
+    const UserSessionCollections = database.collection("session");
+    /**
+     * ! VerifyToken
+     */
+    const VerifyToken = async (req, res, next) => {
+      const authHeaders = req.headers.authorization;
+      if (!authHeaders) {
+        return res.status(401).json({ message: "unauthorized access" });
+      }
+      const token = authHeaders.split(" ")[1];
+
+      if (!token) {
+        return res.status(401).json({ message: "unauthorized access" });
+      }
+
+      const session = await UserSessionCollections.findOne({ token });
+  
+      if (!session) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+      const UserId = session.userId;
+      const user = await UsersCollections.findOne({
+        _id: new ObjectId(UserId),
+      });
+      if (!user) {
+        return res.status(401).json({ message: "Invalid UserId" });
+      }
+      req.user = user;
+      console.log(user);
+      next();
+    };
 
     /**
      *! get startups all data
@@ -43,10 +74,12 @@ async function run() {
         .toArray();
       res.json(result);
     });
+
     /**
-    //  * ! get specfec founder data
-    //  */
-    app.get("/startups/:userId", async (req, res) => {
+     * ! get specfec founder data
+     */
+
+    app.get("/startups/:userId", VerifyToken, async (req, res) => {
       const { userId } = req.params;
       const result = await StartupsCollections.find({ user: userId }).toArray();
       res.json(result);
@@ -67,7 +100,7 @@ async function run() {
      * ! update startups
      */
 
-    app.patch("/startups/:id", async (req, res) => {
+    app.patch("/startups/:id", VerifyToken, async (req, res) => {
       const { id } = req.params;
       const body = req.body;
 
@@ -86,7 +119,7 @@ async function run() {
      * ! delete startups
      */
 
-    app.delete("/startups/:id", async (req, res) => {
+    app.delete("/startups/:id", VerifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await StartupsCollections.deleteOne({
         _id: new ObjectId(id),
@@ -98,49 +131,45 @@ async function run() {
     /**
      * ! get opportunities by sort , search and pangination
      */
-   app.get("/all-opportunities", async (req, res) => {
-  try {
-    const query = {};
+    app.get("/all-opportunities", async (req, res) => {
+      try {
+        const query = {};
 
-    const search = req.query.search || "";
-    const workType = req.query.workType || "";
-    const ecosystemSegment = req.query.ecosystemSegment || "";
-    const page = parseInt(req.query.page) || 1;
+        const search = req.query.search || "";
+        const workType = req.query.workType || "";
+        const ecosystemSegment = req.query.ecosystemSegment || "";
+        const page = parseInt(req.query.page) || 1;
 
-    const perPage = 6;
+        const perPage = 6;
 
-    if (search.trim()) {
-      const regex = new RegExp(search, "i");
+        if (search.trim()) {
+          const regex = new RegExp(search, "i");
 
-      query.$or = [
-        { roleTitle: regex },
-        { requiredSkills: regex },
-      ];
-    }
+          query.$or = [{ roleTitle: regex }, { requiredSkills: regex }];
+        }
 
-    if (workType) query.workType = workType;
-    if (ecosystemSegment) query.ecosystemSegment = ecosystemSegment;
+        if (workType) query.workType = workType;
+        if (ecosystemSegment) query.ecosystemSegment = ecosystemSegment;
 
-    const totalItems = await OpportunitiesCollections.countDocuments(query);
+        const totalItems = await OpportunitiesCollections.countDocuments(query);
 
-    const result = await OpportunitiesCollections
-      .find(query)
-      .skip((page - 1) * perPage)
-      .limit(perPage)
-      .sort({ createdAt: -1 })
-      .toArray();
-console.log(query)
-    res.json({
-      data: result,
-      totalPages: Math.ceil(totalItems / perPage),
-      currentPage: page,
-      totalItems,
+        const result = await OpportunitiesCollections.find(query)
+          .skip((page - 1) * perPage)
+          .limit(perPage)
+          .sort({ createdAt: -1 })
+          .toArray();
+
+        res.json({
+          data: result,
+          totalPages: Math.ceil(totalItems / perPage),
+          currentPage: page,
+          totalItems,
+        });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+      }
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
 
     /**
      * ! get all Opportunities
@@ -164,7 +193,7 @@ console.log(query)
     /**
      * ! get funder all Opportunities data
      */
-    app.get("/founder-opportunities", async (req, res) => {
+    app.get("/founder-opportunities", VerifyToken, async (req, res) => {
       const query = {};
       if (req.query.userId) {
         query.userId = req.query.userId;
@@ -182,7 +211,7 @@ console.log(query)
     /**
      *  ! application post data
      */
-    app.post("/application", async (req, res) => {
+    app.post("/application", VerifyToken, async (req, res) => {
       const query = req.body;
       const result = await ApplicationsCollections.insertOne(query);
       res.json(result);
@@ -191,7 +220,7 @@ console.log(query)
     /**
      * ! get Collaborator`s applications data
      */
-    app.get("/application", async (req, res) => {
+    app.get("/application", VerifyToken, async (req, res) => {
       const query = {};
 
       if (req.query.userId) {
@@ -205,7 +234,7 @@ console.log(query)
     /**
      * !  Collaborator`s applications status update data
      */
-    app.patch("/application/:id", async (req, res) => {
+    app.patch("/application/:id", VerifyToken, async (req, res) => {
       const { id } = req.params;
       const { status } = req.body;
       const result = await ApplicationsCollections.updateOne(
@@ -218,7 +247,7 @@ console.log(query)
     /**
      *  ! founder post data opportunities
      */
-    app.post("/opportunities", async (req, res) => {
+    app.post("/opportunities", VerifyToken, async (req, res) => {
       const query = req.body;
       const result = await OpportunitiesCollections.insertOne(query);
       res.json(result);
@@ -227,7 +256,7 @@ console.log(query)
     /**
      * ! get founder Opportunities data
      */
-    app.get("/founder-opportunities", async (req, res) => {
+    app.get("/founder-opportunities", VerifyToken, async (req, res) => {
       const query = {};
       if (req.query.userId) {
         query.userId = req.query.userId;
@@ -239,7 +268,7 @@ console.log(query)
     /**
      * ! delete founder Opportunities data
      */
-    app.delete("/founder-opportunities/:id", async (req, res) => {
+    app.delete("/founder-opportunities/:id", VerifyToken, async (req, res) => {
       const { id } = req.params;
 
       const result = await OpportunitiesCollections.deleteOne({
@@ -249,7 +278,7 @@ console.log(query)
       res.json(result);
     });
 
-    app.patch("/founder-opportunities/:id", async (req, res) => {
+    app.patch("/founder-opportunities/:id", VerifyToken, async (req, res) => {
       const { id } = req.params;
       const body = req.body;
 
@@ -264,7 +293,7 @@ console.log(query)
     /**
      * ! get Companies applications data
      */
-    app.get("/companies-application", async (req, res) => {
+    app.get("/companies-application", VerifyToken, async (req, res) => {
       const query = {};
       if (req.query.userId) {
         query.founderId = req.query.userId;
@@ -278,7 +307,7 @@ console.log(query)
      * ! founder subcriptions post data
      */
 
-    app.post("/subcriptions", async (req, res) => {
+    app.post("/subcriptions", VerifyToken, async (req, res) => {
       const query = req.body;
       const data = {
         ...query,
@@ -301,16 +330,16 @@ console.log(query)
      * ! get all users
      */
 
-    app.get("/users", async (req, res) => {
+    app.get("/users", VerifyToken, async (req, res) => {
       const result = await UsersCollections.find().toArray();
       res.json(result);
     });
 
     /**
-     * ! update users isBlock.........................................................................................
+     * ! update users isBlock...
      */
 
-    app.patch("/users/:id", async (req, res) => {
+    app.patch("/users/:id", VerifyToken, async (req, res) => {
       const { id } = req.params;
       const body = req.isBlock;
       const result = await UsersCollections.updateOne(
@@ -323,12 +352,12 @@ console.log(query)
     /**
      * ! get subcriptions data
      */
-    app.get("/subcriptions", async (req, res) => {
+    app.get("/subcriptions", VerifyToken, async (req, res) => {
       const result = await SubcriptionsCollections.find().toArray();
       res.json(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
