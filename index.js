@@ -22,7 +22,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const database = client.db("Startup-Team-Builder-Platform");
     const StartupsCollections = database.collection("Startups");
@@ -296,7 +296,7 @@ async function run() {
     /**
      *  ! founder post data opportunities
      */
-    app.post("/opportunities", VerifyToken, async (req, res) => {
+    app.post("/opportunities", VerifyToken,FounderVerify, async (req, res) => {
       const query = req.body;
       const result = await OpportunitiesCollections.insertOne(query);
       res.json(result);
@@ -442,7 +442,7 @@ run().catch(console.dir);
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
-
+module.exports = app;
 // app.listen(port, () => {
 //   console.log(`Example app listening on port ${port}`);
 // });
