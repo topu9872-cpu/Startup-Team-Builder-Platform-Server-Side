@@ -7,7 +7,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 app.use(cors());
 app.use(express.json());
 
-const port = 5000;
+const port =process.env.PORT;
 const uri = process.env.MONGODB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -83,10 +83,7 @@ async function run() {
       next();
     };
     const CollaboratorVerify = async (req, res, next) => {
-      console.log(
-        "userrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
-        req.user.role,
-      );
+     
       if (req.user.role !== "collaborator") {
         return res.status(403).json({
           message: "forbidden access",
@@ -418,7 +415,7 @@ async function run() {
           { _id: new ObjectId(id) },
           { $set: { isBlock } },
         );
-        console.log(result);
+        
         res.json(result);
       },
     );
@@ -432,9 +429,9 @@ async function run() {
     });
 
     // await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!",
-    );
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!",
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -446,6 +443,6 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`Example app listening on port ${port}`);
+// });
